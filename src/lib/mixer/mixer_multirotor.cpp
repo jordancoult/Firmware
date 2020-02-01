@@ -358,6 +358,20 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 		return 0;
 	}
 
+	// ---- MORPHING ----
+	// SET THE DRONE CONFIGURATION
+	// get_control(3, 5) returns the output of the aux1 channel (must set it in qgroundcontrol)
+	MultirotorGeometry morphing_geometry;
+	if (get_control(3, 5) > 0.0f) { // if aux1 is right half, switch to quad, else, switch to tri
+		morphing_geometry = MultirotorGeometry::HEX_COX;
+	} else {
+		morphing_geometry = MultirotorGeometry::OCTA_COX;
+	}
+	// MultirotorGeometryUnderlyingType is typedef for unsigned int
+	_rotor_count = _config_rotor_count[(MultirotorGeometryUnderlyingType)morphing_geometry];
+	_rotors = _config_index[(MultirotorGeometryUnderlyingType)morphing_geometry];
+	// ---- END MORPHING ----
+
 	float roll    = math::constrain(get_control(0, 0) * _roll_scale, -1.0f, 1.0f);
 	float pitch   = math::constrain(get_control(0, 1) * _pitch_scale, -1.0f, 1.0f);
 	float yaw     = math::constrain(get_control(0, 2) * _yaw_scale, -1.0f, 1.0f);
