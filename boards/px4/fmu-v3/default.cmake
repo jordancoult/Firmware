@@ -61,6 +61,7 @@ px4_add_board(
 		uavcan
 
 	MODULES
+		morph_status
 		attitude_estimator_q
 		camera_feedback
 		commander
