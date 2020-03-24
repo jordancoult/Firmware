@@ -68,6 +68,7 @@ px4_add_board(
 		#uavcan
 	MODULES
 		airspeed_selector
+		morph_status
 		#attitude_estimator_q
 		battery_status
 		#camera_feedback
