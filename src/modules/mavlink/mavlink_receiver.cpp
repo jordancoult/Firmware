@@ -111,6 +111,10 @@ void
 MavlinkReceiver::handle_message(mavlink_message_t *msg)
 {
 	switch (msg->msgid) {
+	case MAVLINK_MSG_ID_MORPH_STATUS:
+		handle_message_morph_status(msg);
+		break;
+
 	case MAVLINK_MSG_ID_COMMAND_LONG:
 		handle_message_command_long(msg);
 		break;
@@ -344,6 +348,25 @@ MavlinkReceiver::evaluate_target_ok(int command, int target_system, int target_c
 	}
 
 	return target_ok;
+}
+
+void
+MavlinkReceiver::handle_message_morph_status(mavlink_message_t *msg)
+{
+    mavlink_morph_status_t man;
+    mavlink_msg_morph_status_decode(msg, &man);
+
+	struct morph_status_s status = {};
+
+    status.timestamp = hrt_absolute_time();
+    status.mode = man.mode;
+
+    if (_morph_status_pub == nullptr) {
+        _morph_status_pub = orb_advertise(ORB_ID(morph_status), &status);
+
+    } else {
+        orb_publish(ORB_ID(morph_status), _morph_status_pub, &status);
+    }
 }
 
 void
