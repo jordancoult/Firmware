@@ -105,6 +105,10 @@ void
 MavlinkReceiver::handle_message(mavlink_message_t *msg)
 {
 	switch (msg->msgid) {
+	case MAVLINK_MSG_ID_MORPH_STATUS:
+		handle_message_morph_status(msg);
+		break;
+
 	case MAVLINK_MSG_ID_COMMAND_LONG:
 		handle_message_command_long(msg);
 		break;
@@ -374,6 +378,25 @@ MavlinkReceiver::send_storage_information(int storage_id)
 
 	storage_info.time_boot_ms = hrt_absolute_time() / 1000;
 	mavlink_msg_storage_information_send_struct(_mavlink->get_channel(), &storage_info);
+}
+
+void
+MavlinkReceiver::handle_message_morph_status(mavlink_message_t *msg)
+{
+    mavlink_morph_status_t man;
+    mavlink_msg_morph_status_decode(msg, &man);
+
+	struct morph_status_s status = {};
+
+    status.timestamp = hrt_absolute_time();
+    status.mode = man.mode;
+
+    if (_morph_status_pub == nullptr) {
+        _morph_status_pub = orb_advertise(ORB_ID(morph_status), &status);
+
+    } else {
+        orb_publish(ORB_ID(morph_status), _morph_status_pub, &status);
+    }
 }
 
 void

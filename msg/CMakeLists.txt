@@ -32,6 +32,7 @@
 ############################################################################
 
 set(msg_files
+	morph_status.msg
 	actuator_armed.msg
 	actuator_controls.msg
 	actuator_direct.msg
