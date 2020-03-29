@@ -1,3 +1,2 @@
-# later add uint64 timestamp
-
+uint64 timestamp  # time since system start (microseconds)
 uint8 mode
