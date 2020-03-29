@@ -356,17 +356,12 @@ MavlinkReceiver::handle_message_morph_status(mavlink_message_t *msg)
     mavlink_morph_status_t man;
     mavlink_msg_morph_status_decode(msg, &man);
 
-	struct morph_status_s status = {};
+	morph_status_s status{};
 
     status.timestamp = hrt_absolute_time();
     status.mode = man.mode;
 
-    if (_morph_status_pub == nullptr) {
-        _morph_status_pub = orb_advertise(ORB_ID(morph_status), &status);
-
-    } else {
-        orb_publish(ORB_ID(morph_status), _morph_status_pub, &status);
-    }
+    _morph_status_pub.publish(status);
 }
 
 void

@@ -5,7 +5,4 @@ px4_add_module(
     STACK_MAX 4000
     SRCS
         morph_status.cpp
-    DEPENDS
-        platforms__common
-
 )
