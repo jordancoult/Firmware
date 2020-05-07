@@ -45,9 +45,14 @@ int morph_status_main(int argc, char **argv)
         {
             if (fds[0].revents & POLLIN)
             {
-                struct morph_status_s input;
-                orb_copy(ORB_ID(morph_status), morph_sub_fd, &input);
-                PX4_INFO("Recieved Int : %d", input.mode);
+                struct morph_status_s ms;
+                orb_copy(ORB_ID(morph_status), morph_sub_fd, &ms);
+                PX4_INFO("Morph Mode: %d", ms.mode);
+                PX4_INFO("Morph Angles: (%f,%f,%f,%f)", (double)ms.angles[0], (double)ms.angles[1], (double)ms.angles[2], (double)ms.angles[3]);
+                PX4_INFO("Morph raw_cg: (%f,%f)", (double)ms.raw_cg[0], (double)ms.raw_cg[1]);
+                PX4_INFO("Morph filt_cg: (%f,%f)", (double)ms.filt_cg[0], (double)ms.filt_cg[1]);
+                PX4_INFO("Morph ct: (%f,%f)", (double)ms.ct[0], (double)ms.ct[1]);
+                PX4_INFO("Morph shutter_open: %d \n", ms.shutter_open);  // bool is promoted to int when passed to printf
              }
         }
     }

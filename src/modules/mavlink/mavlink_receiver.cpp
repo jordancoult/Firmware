@@ -353,13 +353,24 @@ MavlinkReceiver::evaluate_target_ok(int command, int target_system, int target_c
 void
 MavlinkReceiver::handle_message_morph_status(mavlink_message_t *msg)
 {
-    mavlink_morph_status_t man;
-    mavlink_msg_morph_status_decode(msg, &man);
+    mavlink_morph_status_t ms_mavlink;  // mavlink representation of Morph Status data
+    mavlink_msg_morph_status_decode(msg, &ms_mavlink);
 
-	morph_status_s status{};
+	morph_status_s status{};  // UORB entity as described in .msg file
 
-    status.timestamp = hrt_absolute_time();
-    status.mode = man.mode;
+    status.timestamp = hrt_absolute_time(); /* Use system time for now, don't trust sender to attach correct timestamp */
+    status.mode = ms_mavlink.mode;
+    status.angles[0] = ms_mavlink.angles[0];
+    status.angles[1] = ms_mavlink.angles[1];
+    status.angles[2] = ms_mavlink.angles[2];
+    status.angles[3] = ms_mavlink.angles[3];
+    status.raw_cg[0] = ms_mavlink.raw_cg[0];
+    status.raw_cg[1] = ms_mavlink.raw_cg[1];
+    status.filt_cg[0] = ms_mavlink.filt_cg[0];
+    status.filt_cg[1] = ms_mavlink.filt_cg[1];
+    status.ct[0] = ms_mavlink.ct[0];
+    status.ct[1] = ms_mavlink.ct[1];
+    status.shutter_open = bool(ms_mavlink.shutter_open != 0);  // 0 false, all other true
 
     _morph_status_pub.publish(status);
 }
