@@ -68,6 +68,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("manual_control_setpoint", 200);
 	add_topic("mission");
 	add_topic("mission_result");
+	add_topic("morph_status", 20);
 	add_topic("offboard_control_mode", 1000);
 	add_topic("position_controller_status", 500);
 	add_topic("position_setpoint_triplet", 200);
