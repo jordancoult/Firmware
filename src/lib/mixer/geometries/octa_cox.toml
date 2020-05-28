@@ -1,8 +1,8 @@
-# Octacopter in coax configuration for morphing rotor failure
+# Generic Octacopter in coax configuration
 
 [info]
 key = "8c"
-description = "Octacopter in coax configuration for morphing rotor failure"
+description = "GenericOctacopter in coax configuration"
 
 [rotor_default]
 axis      = [0.0, 0.0, -1.0]
@@ -10,28 +10,28 @@ Ct        = 1.0
 Cm        = 0.05
 
 [[rotors]]
+name      = "front_right_top"
+position  = [0.707107, 0.707107, -0.1]
+direction = "CCW"
+
+[[rotors]]
+name     = "front_left_top"
+position = [0.707107, -0.707107, -0.1]
+direction = "CW"
+
+[[rotors]]
 name      = "rear_left_top"
 position  = [-0.707107, -0.707107, -0.1]
 direction = "CCW"
 
 [[rotors]]
-name      = "rear_left_bottom"
-position  = [-0.707107, -0.707107, 0.1]
+name     = "rear_right_top"
+position = [-0.707107, 0.707107, -0.1]
 direction = "CW"
 
 [[rotors]]
-name      = "rear_right_top"
-position  = [-0.707107, 0.707107, -0.1]
-direction = "CW"
-
-[[rotors]]
-name      = "rear_right_bottom"
-position  = [-0.707107, 0.707107, 0.1]
-direction = "CCW"
-
-[[rotors]]
-name      = "front_right_top"
-position  = [0.707107, 0.707107, -0.1]
+name     = "front_left_bottom"
+position = [0.707107, -0.707107, 0.1]
 direction = "CCW"
 
 [[rotors]]
@@ -40,11 +40,11 @@ position  = [0.707107, 0.707107, 0.1]
 direction = "CW"
 
 [[rotors]]
-name      = "front_left_top"
-position  = [0.707107, -0.707107, -0.1]
-direction = "CW"
+name     = "rear_right_bottom"
+position = [-0.707107, 0.707107, 0.1]
+direction = "CCW"
 
 [[rotors]]
-name     = "front_left_bottom"
-position = [0.707107, -0.707107, 0.1]
-direction = "CCW"
+name      = "rear_left_bottom"
+position  = [-0.707107, -0.707107, 0.1]
+direction = "CW"
