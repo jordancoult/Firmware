@@ -22,7 +22,7 @@ int morph_status_main(int argc, char **argv)
 
     int error_counter = 0;
 
-    while(true)
+    for (int i=0; i<10; i++)
     {
         int poll_ret = px4_poll(fds, 1, 1000);
 
