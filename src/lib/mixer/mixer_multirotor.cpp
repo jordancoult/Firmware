@@ -45,6 +45,9 @@
 
 #include <mathlib/mathlib.h>
 
+#include <uORB/uORB.h>
+#include <uORB/topics/dynageo.h>
+
 #ifdef MIXER_MULTIROTOR_USE_MOCK_GEOMETRY
 enum class MultirotorGeometry : MultirotorGeometryUnderlyingType {
 	QUAD_X,
@@ -73,6 +76,13 @@ const char *_config_key[] = {"4x"};
 
 #endif /* MIXER_MULTIROTOR_USE_MOCK_GEOMETRY */
 
+struct dynageo_s dg;  // buffer
+// standard x8 quad, no failure
+dg.failed_arm = FAILED_ARM_NONE;
+dg.roll = {-0.707107, 0.707107, 0.707107, -0.707107}; // dynamic geometry condensed mixer vals -- roll scaling
+dg.pitch = {0.707107, -0.707107, 0.707107, -0.707107}; // dynamic geometry condensed mixer vals -- pitch scaling
+int dynageo_sub_fd = orb_subscribe(ORB_ID(dynageo));
+orb_set_interval(dynageo_sub_fd, 50); // limit the update rate to 20 hz
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
@@ -358,19 +368,73 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 		return 0;
 	}
 
+	/* Rotorfailure Plan:
+	- On CC, mixer is calculated like it would be for 6 rotors, but sent with 8 (2 are empty)
+	- The two dead motors are removed from mixer so it's the exact mixer for 6-motors
+	- All the calculations are done with it. Then, before assigning outputs, I re-splice the dead motors with an output of 0.
+	*/
+
 	// ---- MORPHING ----
 	// SET THE DRONE CONFIGURATION
-	// get_control(3, 5) returns the output of the aux1 channel (must set it in qgroundcontrol)
-	MultirotorGeometry morphing_geometry;
-	if (get_control(3, 5) > 0.0f) { // if aux1 is right half, switch to quad, else, switch to tri
-		morphing_geometry = MultirotorGeometry::HEX_COX;
+
+	//maybe todo: add check - if havent got data for a while, revert back to quad
+
+	bool dynageo_updated;
+	orb_check(dynageo_sub_fd, &dynageo_updated);
+
+	if (dynageo_updated) {
+		// Got data
+		orb_copy(ORB_ID(dynageo), dynageo_sub_fd, &dg);  // orb_copy causes orb_check to return false until another update
 	} else {
-		morphing_geometry = MultirotorGeometry::OCTA_COX;
+		// Haven't got data yet
+		failed_arm = FAILED_ARM_NONE;
 	}
-	// MultirotorGeometryUnderlyingType is typedef for unsigned int
-	_rotor_count = _config_rotor_count[(MultirotorGeometryUnderlyingType)morphing_geometry];
-	_rotors = _config_index[(MultirotorGeometryUnderlyingType)morphing_geometry];
-	// ---- END MORPHING ----
+
+
+	_rotor_count = 6;
+
+	// Derive failed rotor indeces from rotorfailure msg
+	int failed_r_ind[2];
+	switch (failed_arm) {
+	case FRONT_RIGHT:
+		failed_r_ind[0] = 0; 
+		failed_r_ind[1] = 5;
+		break;
+	
+	case REAR_LEFT:
+		failed_r_ind[0] = 2;
+		failed_r_ind[1] = 7;
+		break;
+	
+	case FRONT_LEFT: 
+		failed_r_ind[0] = 1;
+		failed_r_ind[1] = 4;
+		break;
+	
+	case REAR_RIGHT:
+		failed_r_ind[0] = 3;
+		failed_r_ind[1] = 6;
+		break;
+	
+	case FAILED_ARM_NONE:
+		_rotor_count = 8;
+		break;
+		
+	default:
+		PX4_ERR("Invalid value for failed_arm message: %d", failed_arm);
+	}
+
+	// Make an array of Rotor structs (roll, pitch, yaw, thrust)
+	MultirotorMixer::Rotor _rotors[] = {
+        {  0.707107, -0.707107,  1.000000,  1.000000 },  // Front-right Top (ccw)
+        {  0.707107, -0.707107, -1.000000,  1.000000 },  // Front-left  Top (cw)
+        { -0.707107, -0.707107,  1.000000,  1.000000 },  // Rear-left   Top
+        { -0.707107, -0.707107, -1.000000,  1.000000 },	 // Rear-right  Top
+        { -0.707107,  0.707107,  1.000000,  1.000000 },  // Front-left  Bot
+        { -0.707107,  0.707107, -1.000000,  1.000000 },  // Front-right Bot
+        {  0.707107,  0.707107,  1.000000,  1.000000 },  // Rear-right  Bot
+        {  0.707107,  0.707107, -1.000000,  1.000000 },  // Rear-left   Bot
+	};
 
 	float roll    = math::constrain(get_control(0, 0) * _roll_scale, -1.0f, 1.0f);
 	float pitch   = math::constrain(get_control(0, 1) * _pitch_scale, -1.0f, 1.0f);
