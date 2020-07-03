@@ -508,7 +508,6 @@ bool Logger::copy_if_updated(int sub_idx, void *buffer, bool try_to_subscribe)
 
 void Logger::add_default_topics()
 {
-	add_topic("morph_status", 20);
 	add_topic("actuator_controls_0", 100);
 	add_topic("actuator_controls_1", 100);
 	add_topic("airspeed", 200);
@@ -526,6 +525,7 @@ void Logger::add_default_topics()
 	add_topic("manual_control_setpoint", 200);
 	add_topic("mission");
 	add_topic("mission_result");
+	add_topic("morph_status", 50);
 	add_topic("optical_flow", 50);
 	add_topic("position_controller_status", 500);
 	add_topic("position_setpoint_triplet", 200);
