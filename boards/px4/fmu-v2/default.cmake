@@ -68,12 +68,12 @@ px4_add_board(
 		#uavcan
 	MODULES
 		airspeed_selector
-		morph_status
 		#attitude_estimator_q
 		battery_status
 		#camera_feedback
 		commander
 		dataman
+		dynageo
 		ekf2
 		#esc_battery
 		#events
@@ -90,6 +90,7 @@ px4_add_board(
 		mc_pos_control
 		mc_rate_control
 		#micrortps_bridge
+		morph_status
 		navigator
 		rc_update
 		#rover_pos_control

@@ -68,6 +68,7 @@
 #include <uORB/topics/debug_vect.h>
 #include <uORB/topics/differential_pressure.h>
 #include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/dynageo.h>
 #include <uORB/topics/follow_target.h>
 #include <uORB/topics/gps_inject_data.h>
 #include <uORB/topics/home_position.h>
@@ -76,6 +77,7 @@
 #include <uORB/topics/landing_target_pose.h>
 #include <uORB/topics/log_message.h>
 #include <uORB/topics/manual_control_setpoint.h>
+#include <uORB/topics/morph_status.h>
 #include <uORB/topics/obstacle_distance.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/onboard_computer_status.h>
@@ -102,7 +104,6 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_trajectory_bezier.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
-#include <uORB/topics/morph_status.h>
 
 class Mavlink;
 
@@ -148,6 +149,7 @@ private:
 	void handle_message_debug_float_array(mavlink_message_t *msg);
 	void handle_message_debug_vect(mavlink_message_t *msg);
 	void handle_message_distance_sensor(mavlink_message_t *msg);
+	void handle_message_dynageo(mavlink_message_t *msg);
 	void handle_message_follow_target(mavlink_message_t *msg);
 	void handle_message_gps_global_origin(mavlink_message_t *msg);
 	void handle_message_gps_rtcm_data(mavlink_message_t *msg);
@@ -159,6 +161,7 @@ private:
 	void handle_message_landing_target(mavlink_message_t *msg);
 	void handle_message_logging_ack(mavlink_message_t *msg);
 	void handle_message_manual_control(mavlink_message_t *msg);
+	void handle_message_morph_status(mavlink_message_t *msg);
 	void handle_message_named_value_float(mavlink_message_t *msg);
 	void handle_message_obstacle_distance(mavlink_message_t *msg);
 	void handle_message_odometry(mavlink_message_t *msg);
@@ -180,7 +183,6 @@ private:
 	void handle_message_utm_global_position(mavlink_message_t *msg);
 	void handle_message_vision_position_estimate(mavlink_message_t *msg);
 	void handle_message_onboard_computer_status(mavlink_message_t *msg);
-	void handle_message_morph_status(mavlink_message_t *msg);
 
 
 	void Run();
@@ -240,10 +242,12 @@ private:
 	uORB::Publication<debug_value_s>			_debug_value_pub{ORB_ID(debug_value)};
 	uORB::Publication<debug_vect_s>				_debug_vect_pub{ORB_ID(debug_vect)};
 	uORB::Publication<differential_pressure_s>		_differential_pressure_pub{ORB_ID(differential_pressure)};
+	uORB::Publication<dynageo_s>				_dynageo_pub{ORB_ID(dynageo)};
 	uORB::Publication<follow_target_s>			_follow_target_pub{ORB_ID(follow_target)};
 	uORB::Publication<irlock_report_s>			_irlock_report_pub{ORB_ID(irlock_report)};
 	uORB::Publication<landing_target_pose_s>		_landing_target_pose_pub{ORB_ID(landing_target_pose)};
 	uORB::Publication<log_message_s>			_log_message_pub{ORB_ID(log_message)};
+	uORB::Publication<morph_status_s> 			_morph_status_pub{ORB_ID(morph_status)};
 	uORB::Publication<obstacle_distance_s>			_obstacle_distance_pub{ORB_ID(obstacle_distance)};
 	uORB::Publication<offboard_control_mode_s>		_offboard_control_mode_pub{ORB_ID(offboard_control_mode)};
 	uORB::Publication<onboard_computer_status_s>		_onboard_computer_status_pub{ORB_ID(onboard_computer_status)};
@@ -262,7 +266,6 @@ private:
 	uORB::Publication<vehicle_rates_setpoint_s>		_rates_sp_pub{ORB_ID(vehicle_rates_setpoint)};
 	uORB::Publication<vehicle_trajectory_bezier_s>	_trajectory_bezier_pub{ORB_ID(vehicle_trajectory_bezier)};
 	uORB::Publication<vehicle_trajectory_waypoint_s>	_trajectory_waypoint_pub{ORB_ID(vehicle_trajectory_waypoint)};
-	uORB::Publication<morph_status_s> 				_morph_status_pub{ORB_ID(morph_status)};
 
 	// ORB publications (multi)
 	uORB::PublicationMulti<distance_sensor_s>		_distance_sensor_pub{ORB_ID(distance_sensor), ORB_PRIO_LOW};
