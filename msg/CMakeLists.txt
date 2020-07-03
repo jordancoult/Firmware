@@ -32,7 +32,6 @@
 ############################################################################
 
 set(msg_files
-	morph_status.msg
 	actuator_armed.msg
 	actuator_controls.msg
 	actuator_direct.msg
@@ -53,6 +52,7 @@ set(msg_files
 	debug_vect.msg
 	differential_pressure.msg
 	distance_sensor.msg
+	dynageo.msg
 	ekf2_innovations.msg
 	ekf2_timestamps.msg
 	ekf_gps_drift.msg
@@ -77,6 +77,7 @@ set(msg_files
 	mavlink_log.msg
 	mission.msg
 	mission_result.msg
+	morph_status.msg
 	mount_orientation.msg
 	multirotor_motor_limits.msg
 	obstacle_distance.msg

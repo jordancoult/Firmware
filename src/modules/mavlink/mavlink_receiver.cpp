@@ -105,6 +105,10 @@ void
 MavlinkReceiver::handle_message(mavlink_message_t *msg)
 {
 	switch (msg->msgid) {
+	case MAVLINK_MSG_ID_DYNAGEO:
+		handle_message_dynageo(msg);
+		break;
+
 	case MAVLINK_MSG_ID_MORPH_STATUS:
 		handle_message_morph_status(msg);
 		break;
@@ -378,6 +382,32 @@ MavlinkReceiver::send_storage_information(int storage_id)
 
 	storage_info.time_boot_ms = hrt_absolute_time() / 1000;
 	mavlink_msg_storage_information_send_struct(_mavlink->get_channel(), &storage_info);
+}
+
+void
+MavlinkReceiver::handle_message_dynageo(mavlink_message_t *msg)
+{
+    mavlink_dynageo_t dg_mavlink; 
+    mavlink_msg_dynageo_decode(msg, &dg_mavlink);
+
+	dynageo_s dg_msg{};  // UORB entity as described in .msg file
+
+    dg_msg.timestamp = hrt_absolute_time(); /* Use system time for now, don't trust sender to attach correct timestamp */
+    dg_msg.mode = dg_mavlink.mode;
+    // Roll Scale
+    dg_msg.roll[0] = dg_mavlink.roll[0];
+    dg_msg.roll[1] = dg_mavlink.roll[1];
+    dg_msg.roll[2] = dg_mavlink.roll[2];
+    dg_msg.roll[3] = dg_mavlink.roll[3];
+    // Pitch Scale
+    dg_msg.pitch[0] = dg_mavlink.pitch[0];
+    dg_msg.pitch[1] = dg_mavlink.pitch[1];
+    dg_msg.pitch[2] = dg_mavlink.pitch[2];
+    dg_msg.pitch[3] = dg_mavlink.pitch[3];
+    // Failed Arm
+    dg_msg.failed_arm = dg_mavlink.failed_arm;
+
+    _dynageo_pub.publish(dg_msg);
 }
 
 void

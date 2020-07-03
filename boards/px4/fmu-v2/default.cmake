@@ -62,11 +62,11 @@ px4_add_board(
 		#uavcan
 
 	MODULES
-		morph_status
 		#attitude_estimator_q
 		camera_feedback
 		commander
 		dataman
+		dynageo
 		ekf2
 		events
 		fw_att_control
@@ -80,6 +80,7 @@ px4_add_board(
 		mavlink
 		mc_att_control
 		mc_pos_control
+		morph_status
 		navigator
 		battery_status
 		sensors
