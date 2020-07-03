@@ -516,6 +516,7 @@ void Logger::add_default_topics()
 	add_topic("camera_trigger");
 	add_topic("camera_trigger_secondary");
 	add_topic("cpuload");
+	add_topic("dynageo", 100);
 	add_topic("ekf2_innovations", 200);
 	add_topic("ekf_gps_drift");
 	add_topic("esc_status", 250);
