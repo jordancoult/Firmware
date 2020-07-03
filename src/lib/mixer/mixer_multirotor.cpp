@@ -45,9 +45,6 @@
 
 #include <mathlib/mathlib.h>
 
-#include <uORB/uORB.h>
-#include <uORB/topics/dynageo.h>
-
 #ifdef MIXER_MULTIROTOR_USE_MOCK_GEOMETRY
 enum class MultirotorGeometry : MultirotorGeometryUnderlyingType {
 	QUAD_X,
@@ -75,14 +72,6 @@ const char *_config_key[] = {"4x"};
 #include "mixer_multirotor_normalized.generated.h"
 
 #endif /* MIXER_MULTIROTOR_USE_MOCK_GEOMETRY */
-
-struct dynageo_s dg;  // buffer
-// standard x8 quad, no failure
-dg.failed_arm = FAILED_ARM_NONE;
-dg.roll = {-0.707107, 0.707107, 0.707107, -0.707107}; // dynamic geometry condensed mixer vals -- roll scaling
-dg.pitch = {0.707107, -0.707107, 0.707107, -0.707107}; // dynamic geometry condensed mixer vals -- pitch scaling
-int dynageo_sub_fd = orb_subscribe(ORB_ID(dynageo));
-orb_set_interval(dynageo_sub_fd, 50); // limit the update rate to 20 hz
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
@@ -112,6 +101,16 @@ MultirotorMixer::MultirotorMixer(ControlCallback control_cb,
 	for (unsigned i = 0; i < _rotor_count; ++i) {
 		_outputs_prev[i] = _idle_speed;
 	}
+	// Robodub: Initialize to quad positions
+	_dg.roll[0] = -0.707107;
+    _dg.roll[1] = 0.707107;
+    _dg.roll[2] = 0.707107;
+    _dg.roll[3] = -0.707107;
+    _dg.pitch[0] = 0.707107;
+    _dg.pitch[1] = -0.707107;
+    _dg.pitch[2] = 0.707107;
+    _dg.pitch[3] = -0.707107;
+    _dg.failed_arm = dynageo_s::FAILED_ARM_NONE;
 }
 MultirotorMixer::MultirotorMixer(ControlCallback control_cb,
 				 uintptr_t cb_handle,
@@ -133,12 +132,23 @@ MultirotorMixer::MultirotorMixer(ControlCallback control_cb,
 	for (unsigned i = 0; i < _rotor_count; ++i) {
 		_outputs_prev[i] = _idle_speed;
 	}
+	// Robodub: Initialize to quad positions
+	_dg.roll[0] = -0.707107;
+    _dg.roll[1] = 0.707107;
+    _dg.roll[2] = 0.707107;
+    _dg.roll[3] = -0.707107;
+    _dg.pitch[0] = 0.707107;
+    _dg.pitch[1] = -0.707107;
+    _dg.pitch[2] = 0.707107;
+    _dg.pitch[3] = -0.707107;
+    _dg.failed_arm = dynageo_s::FAILED_ARM_NONE; 
 }
 
 MultirotorMixer::~MultirotorMixer()
 {
 	delete[] _outputs_prev;
 	delete[] _tmp_array;
+	// todo: should I delete _dg?
 }
 
 MultirotorMixer *
@@ -368,73 +378,119 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 		return 0;
 	}
 
-	/* Rotorfailure Plan:
+	/* 
+	Robodub
+
+	Current Rotorfailure Plan:
+
+	dg_mix = updated 8-rotor mixer
+	_rotor_count = 8
+	if failed_arm
+		failed_rot_i = {x,y}
+		dg_mix[ failed_rot_i ] = 0;
+		_rotors = dg_mix
+		...use mixer... -> outputs
+		outputs[ failed_rot_i ] = 0;
+	else
+		_rotors = dg_mix
+		...use mixer... -> outputs
+	end	
+
+	Alternate Rotorfailure Plan:
+
 	- On CC, mixer is calculated like it would be for 6 rotors, but sent with 8 (2 are empty)
 	- The two dead motors are removed from mixer so it's the exact mixer for 6-motors
-	- All the calculations are done with it. Then, before assigning outputs, I re-splice the dead motors with an output of 0.
+	- All the calculations are done with it. Then, after assigning outputs, I re-splice the dead motors with an output of 0.
+
+	dg_mix = updated 8-rotor mixer
+	if failed_arm
+		_rotor_count = 6
+		failed_rot_i = {x,y}
+		_rotors = dg_mix.delete(failed_rot_i)
+		...use mixer... -> outputs
+		outputs.add_zero(failed_rot_i)
+	else
+		_rotor_count = 8
+		_rotors = dg_mix
+		...use mixer... -> outputs
+	end	
+
 	*/
 
-	// ---- MORPHING ----
-	// SET THE DRONE CONFIGURATION
-
-	//maybe todo: add check - if havent got data for a while, revert back to quad
-
-	bool dynageo_updated;
-	orb_check(dynageo_sub_fd, &dynageo_updated);
-
-	if (dynageo_updated) {
-		// Got data
-		orb_copy(ORB_ID(dynageo), dynageo_sub_fd, &dg);  // orb_copy causes orb_check to return false until another update
-	} else {
-		// Haven't got data yet
-		failed_arm = FAILED_ARM_NONE;
+	// Before the first update, _dg will be the standard x geometry. After the first update, _dg will always be the last geometry sent to PX4
+	if (_dynageo_sub.updated()) {
+		_dynageo_sub.copy(&_dg);
 	}
 
+	// Mixer for non-rotor-failure morphing robodub drone
+	// Mixer = array of Rotor structs (roll, pitch, yaw, thrust)
+	MultirotorMixer::Rotor dg_mix[] = {
+        { _dg.roll[dynageo_s::FRONT_RIGHT], _dg.pitch[dynageo_s::FRONT_RIGHT],  1.0,  1.0 },  // Front-right Top (ccw)
+        { _dg.roll[dynageo_s::FRONT_LEFT],  _dg.pitch[dynageo_s::FRONT_LEFT],  -1.0,  1.0 },  // Front-left  Top (cw)
+        { _dg.roll[dynageo_s::REAR_LEFT],   _dg.pitch[dynageo_s::REAR_LEFT],    1.0,  1.0 },  // Rear-left   Top
+        { _dg.roll[dynageo_s::REAR_RIGHT],  _dg.pitch[dynageo_s::REAR_RIGHT],  -1.0,  1.0 },  // Rear-right  Top
+        { _dg.roll[dynageo_s::FRONT_LEFT],  _dg.pitch[dynageo_s::FRONT_LEFT],   1.0,  1.0 },  // Front-left  Bot
+        { _dg.roll[dynageo_s::FRONT_RIGHT], _dg.pitch[dynageo_s::FRONT_RIGHT], -1.0,  1.0 },  // Front-right Bot
+        { _dg.roll[dynageo_s::REAR_RIGHT],  _dg.pitch[dynageo_s::REAR_RIGHT],   1.0,  1.0 },  // Rear-right  Bot
+        { _dg.roll[dynageo_s::REAR_LEFT],   _dg.pitch[dynageo_s::REAR_LEFT],   -1.0,  1.0 },  // Rear-left   Bot
+	};
 
-	_rotor_count = 6;
+	/* Standard Coaxial Octocopter Mixer as of PX4 v1.9.2 (for reference)
+	MultirotorMixer::Rotor _rotors[] = {
+        { -0.707107,  0.707107,  1.000000,  1.000000 },  // Front-right Top (ccw)
+        {  0.707107,  0.707107, -1.000000,  1.000000 },  // Front-left  Top (cw)
+        {  0.707107, -0.707107,  1.000000,  1.000000 },  // Rear-left   Top
+        { -0.707107, -0.707107, -1.000000,  1.000000 },	 // Rear-right  Top
+        {  0.707107,  0.707107,  1.000000,  1.000000 },  // Front-left  Bot
+        { -0.707107,  0.707107, -1.000000,  1.000000 },  // Front-right Bot
+        { -0.707107, -0.707107,  1.000000,  1.000000 },  // Rear-right  Bot
+        {  0.707107, -0.707107, -1.000000,  1.000000 },  // Rear-left   Bot
+	};
+	*/
 
-	// Derive failed rotor indeces from rotorfailure msg
-	int failed_r_ind[2];
-	switch (failed_arm) {
-	case FRONT_RIGHT:
-		failed_r_ind[0] = 0; 
-		failed_r_ind[1] = 5;
+	// Derive failed rotor indeces from dynageo msg
+	bool failure = true;
+	int failed_rot_i[2];  // in ascending order
+	switch (_dg.failed_arm) {
+	case dynageo_s::FRONT_RIGHT:
+		failed_rot_i[0] = 0; 
+		failed_rot_i[1] = 5;
 		break;
 	
-	case REAR_LEFT:
-		failed_r_ind[0] = 2;
-		failed_r_ind[1] = 7;
+	case dynageo_s::REAR_LEFT:
+		failed_rot_i[0] = 2;
+		failed_rot_i[1] = 7;
 		break;
 	
-	case FRONT_LEFT: 
-		failed_r_ind[0] = 1;
-		failed_r_ind[1] = 4;
+	case dynageo_s::FRONT_LEFT: 
+		failed_rot_i[0] = 1;
+		failed_rot_i[1] = 4;
 		break;
 	
-	case REAR_RIGHT:
-		failed_r_ind[0] = 3;
-		failed_r_ind[1] = 6;
+	case dynageo_s::REAR_RIGHT:
+		failed_rot_i[0] = 3;
+		failed_rot_i[1] = 6;
 		break;
 	
-	case FAILED_ARM_NONE:
-		_rotor_count = 8;
+	case dynageo_s::FAILED_ARM_NONE:
+		failure = false;
 		break;
 		
 	default:
 		PX4_ERR("Invalid value for failed_arm message: %d", failed_arm);
 	}
 
-	// Make an array of Rotor structs (roll, pitch, yaw, thrust)
-	MultirotorMixer::Rotor _rotors[] = {
-        {  0.707107, -0.707107,  1.000000,  1.000000 },  // Front-right Top (ccw)
-        {  0.707107, -0.707107, -1.000000,  1.000000 },  // Front-left  Top (cw)
-        { -0.707107, -0.707107,  1.000000,  1.000000 },  // Rear-left   Top
-        { -0.707107, -0.707107, -1.000000,  1.000000 },	 // Rear-right  Top
-        { -0.707107,  0.707107,  1.000000,  1.000000 },  // Front-left  Bot
-        { -0.707107,  0.707107, -1.000000,  1.000000 },  // Front-right Bot
-        {  0.707107,  0.707107,  1.000000,  1.000000 },  // Rear-right  Bot
-        {  0.707107,  0.707107, -1.000000,  1.000000 },  // Rear-left   Bot
-	};
+	// Disable rows if rotorfailure
+	if ( failure ) {
+		dg_mix[ failed_rot_i[0] ] = {0, 0, 0, 0};
+		dg_mix[ failed_rot_i[1] ] = {0, 0, 0, 0};
+	}
+
+	// Assign fields
+	_rotors = dg_mix;
+	_rotor_count = 8;
+
+	// Robodub END
 
 	float roll    = math::constrain(get_control(0, 0) * _roll_scale, -1.0f, 1.0f);
 	float pitch   = math::constrain(get_control(0, 1) * _pitch_scale, -1.0f, 1.0f);
@@ -459,6 +515,9 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 		mix_airmode_disabled(roll, pitch, yaw, thrust, outputs);
 		break;
 	}
+
+	// Robodub morphing: if doing octa-hexa mixer switch method, reinsert output and mixer rows here
+	// Also, to eliminate slew rate for reactivated rotors, just set those indeces of _outputs_prev to outputs
 
 	// Apply thrust model and scale outputs to range [idle_speed, 1].
 	// At this point the outputs are expected to be in [0, 1], but they can be outside, for example
@@ -520,6 +579,12 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 
 	// this will force the caller of the mixer to always supply new slew rate values, otherwise no slew rate limiting will happen
 	_delta_out_max = 0.0f;
+
+	// Robodub
+	if ( failure ) {
+		outputs[ failed_rot_i[0] ] = 0;  // this is the value of the failed rotor outputs in rotorfailure-v1
+		outputs[ failed_rot_i[1] ] = 0;
+	}
 
 	return _rotor_count;
 }
