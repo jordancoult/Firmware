@@ -416,11 +416,6 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 
 	*/
 
-	// Before the first update, _dg will be the standard x geometry. After the first update, _dg will always be the last geometry sent to PX4
-	if (_dynageo_sub.updated()) {
-		_dynageo_sub.copy(&_dg);
-	}
-
 	// Mixer for non-rotor-failure morphing robodub drone
 	// Mixer = array of Rotor structs (roll, pitch, yaw, thrust)
 	MultirotorMixer::Rotor dg_mix[] = {
@@ -695,4 +690,9 @@ MultirotorMixer::groups_required(uint32_t &groups)
 uint16_t MultirotorMixer::get_saturation_status()
 {
 	return _saturation_status.value;
+}
+
+void
+MultirotorMixer::update_dynageo(dynageo_s dg_in) {
+	_dg = dg_in;
 }

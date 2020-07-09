@@ -130,9 +130,7 @@
 #include <stdint.h>
 #include <lib/mathlib/mathlib.h>
 
-#include <uORB/Subscription.hpp>
 #include <uORB/topics/dynageo.h>
-// See FixedwingAttitudeControl for uORB example
 
 /** simple channel scaler */
 struct mixer_scaler_s {
@@ -742,6 +740,13 @@ public:
 		uint16_t value;
 	};
 
+	/**
+	 * @brief      Updates the mixer data with the data that's passed in
+	 *
+	 * @param[in]  dg_in    The updated dynageo struct to pass in, which contains the mixer data
+	 */
+	void update_dynageo(dynageo_s dg_in);
+
 private:
 	/**
 	 * Computes the gain k by which desaturation_vector has to be multiplied
@@ -833,7 +838,6 @@ private:
 	float 				*_outputs_prev = nullptr;
 	float 				*_tmp_array = nullptr;
 
-	uORB::Subscription  _dynageo_sub{ORB_ID(dynageo)}; /**< topic handle on which data is received */
 	dynageo_s		    _dg {};
 
 	/* do not allow to copy due to ptr data members */
