@@ -363,7 +363,6 @@ MavlinkReceiver::handle_message_dynageo(mavlink_message_t *msg)
 	dynageo_s dg_msg{};  // UORB entity as described in .msg file
 
     dg_msg.timestamp = hrt_absolute_time(); /* Use system time for now, don't trust sender to attach correct timestamp */
-    dg_msg.mode = dg_mavlink.mode;
     // Roll Scale
     dg_msg.roll[0] = dg_mavlink.roll[0];
     dg_msg.roll[1] = dg_mavlink.roll[1];
