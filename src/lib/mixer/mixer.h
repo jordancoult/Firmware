@@ -129,9 +129,9 @@
 
 #include <stdint.h>
 #include <lib/mathlib/mathlib.h>
+
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/dynageo.h>
-//#include <uORB/SubscriptionCallback.hpp>
 // See FixedwingAttitudeControl for uORB example
 
 /** simple channel scaler */
@@ -833,8 +833,8 @@ private:
 	float 				*_outputs_prev = nullptr;
 	float 				*_tmp_array = nullptr;
 
-	uORB::Subscription _dynageo_sub{ORB_ID(dynageo)}; /**< topic handle on which data is received */
-	dynageo_s		   _dg {};
+	uORB::Subscription  _dynageo_sub{ORB_ID(dynageo)}; /**< topic handle on which data is received */
+	dynageo_s		    _dg {};
 
 	/* do not allow to copy due to ptr data members */
 	MultirotorMixer(const MultirotorMixer &);
