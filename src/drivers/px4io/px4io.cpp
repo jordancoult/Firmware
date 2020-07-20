@@ -70,7 +70,7 @@
 #include <rc/dsm.h>
 
 #include <lib/mathlib/mathlib.h>
-#include <lib/mixer/mixer.h>
+//#include <lib/mixer/mixer.h>
 #include <perf/perf_counter.h>
 #include <systemlib/err.h>
 #include <parameters/param.h>
@@ -1841,46 +1841,6 @@ PX4IO::io_publish_raw_rc()
 int
 PX4IO::io_publish_pwm_outputs()
 {
-	if (_hitl_mode) {
-		return OK;
-	}
-
-	/* get servo values from IO */
-	uint16_t ctl[_max_actuators];
-	int ret = io_reg_get(PX4IO_PAGE_SERVOS, 0, ctl, _max_actuators);
-
-	if (ret != OK) {
-		return ret;
-	}
-
-	actuator_outputs_s outputs = {};
-	outputs.timestamp = hrt_absolute_time();
-	outputs.noutputs = _max_actuators;
-
-	/* convert from register format to float */
-	for (unsigned i = 0; i < _max_actuators; i++) {
-		outputs.output[i] = ctl[i];
-	}
-
-	_to_outputs.publish(outputs);
-
-	/* get mixer status flags from IO */
-	MultirotorMixer::saturation_status saturation_status;
-	ret = io_reg_get(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_MIXER, &saturation_status.value, 1);
-
-	if (ret != OK) {
-		return ret;
-	}
-
-	/* publish mixer status */
-	if (saturation_status.flags.valid) {
-		multirotor_motor_limits_s motor_limits{};
-		motor_limits.timestamp = hrt_absolute_time();
-		motor_limits.saturation_status = saturation_status.value;
-
-		_to_mixer_status.publish(motor_limits);
-	}
-
 	return OK;
 }
 
@@ -2005,117 +1965,7 @@ PX4IO::print_debug()
 int
 PX4IO::mixer_send(const char *buf, unsigned buflen, unsigned retries)
 {
-	/* get debug level */
-	int debuglevel = io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_SET_DEBUG);
-
-	uint8_t	frame[_max_transfer];
-
-	do {
-
-		px4io_mixdata *msg = (px4io_mixdata *)&frame[0];
-		unsigned max_len = _max_transfer - sizeof(px4io_mixdata);
-
-		msg->f2i_mixer_magic = F2I_MIXER_MAGIC;
-		msg->action = F2I_MIXER_ACTION_RESET;
-
-		do {
-			unsigned count = buflen;
-
-			if (count > max_len) {
-				count = max_len;
-			}
-
-			if (count > 0) {
-				memcpy(&msg->text[0], buf, count);
-				buf += count;
-				buflen -= count;
-
-			} else {
-				continue;
-			}
-
-			/*
-			 * We have to send an even number of bytes.  This
-			 * will only happen on the very last transfer of a
-			 * mixer, and we are guaranteed that there will be
-			 * space left to round up as _max_transfer will be
-			 * even.
-			 */
-			unsigned total_len = sizeof(px4io_mixdata) + count;
-
-			if (total_len % 2) {
-				msg->text[count] = '\0';
-				total_len++;
-			}
-
-			int ret;
-
-			for (int i = 0; i < 30; i++) {
-				/* failed, but give it a 2nd shot */
-				ret = io_reg_set(PX4IO_PAGE_MIXERLOAD, 0, (uint16_t *)frame, total_len / 2);
-
-				if (ret) {
-					px4_usleep(333);
-
-				} else {
-					break;
-				}
-			}
-
-			/* print mixer chunk */
-			if (debuglevel > 5 || ret) {
-
-				warnx("fmu sent: \"%s\"", msg->text);
-
-				/* read IO's output */
-				print_debug();
-			}
-
-			if (ret) {
-				PX4_ERR("mixer send error %d", ret);
-				return ret;
-			}
-
-			msg->action = F2I_MIXER_ACTION_APPEND;
-
-		} while (buflen > 0);
-
-		int ret;
-
-		/* send the closing newline */
-		msg->text[0] = '\n';
-		msg->text[1] = '\0';
-
-		for (int i = 0; i < 30; i++) {
-			/* failed, but give it a 2nd shot */
-			ret = io_reg_set(PX4IO_PAGE_MIXERLOAD, 0, (uint16_t *)frame, (sizeof(px4io_mixdata) + 2) / 2);
-
-			if (ret) {
-				px4_usleep(333);
-
-			} else {
-				break;
-			}
-		}
-
-		if (ret == 0) {
-			/* success, exit */
-			break;
-		}
-
-		retries--;
-
-	} while (retries > 0);
-
-	if (retries == 0) {
-		mavlink_and_console_log_info(&_mavlink_log_pub, "[IO] mixer upload fail");
-		/* load must have failed for some reason */
-		return -EINVAL;
-
-	} else {
-		/* all went well, set the mixer ok flag */
-		return io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0, PX4IO_P_STATUS_FLAGS_MIXER_OK);
-	}
+	return 0;
 }
 
 void
