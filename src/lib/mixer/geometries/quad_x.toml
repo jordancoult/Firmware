@@ -1,4 +1,4 @@
-# Generic Quadcopter in X configuration
+# Morphing-CR-motors version (for front-left rotorfailure) Quadcopter in X configuration
 
 [info]
 key = "4x"
@@ -8,22 +8,20 @@ description = "Generic Quadcopter in X configuration"
 direction = "CW"
 axis      = [0.0, 0.0, -1.0]
 Ct        = 1.0
-Cm        = 0.05
-
-[[rotors]]
-name      = "front_right"
-position  = [0.707107, 0.707107, 0.0]
-direction = "CCW"
+Cm        = 0.0
 
 [[rotors]]
 name      = "rear_left"
 position  = [-0.707107, -0.707107, 0.0]
-direction = "CCW"
+
+[[rotors]]
+name      = "rear_right"
+position  = [-0.707107, 0.707107, 0.0]
+
+[[rotors]]
+name      = "front_right"
+position  = [0.707107, 0.707107, 0.0]
 
 [[rotors]]
 name     = "front_left"
 position = [0.707107, -0.707107, 0.0]
-
-[[rotors]]
-name     = "rear_right"
-position = [-0.707107, 0.707107, 0.0]

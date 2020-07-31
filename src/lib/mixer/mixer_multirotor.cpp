@@ -363,9 +363,9 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 	// get_control(3, 5) returns the output of the aux1 channel (must set it in qgroundcontrol)
 	MultirotorGeometry morphing_geometry;
 	if (get_control(3, 5) > 0.0f) { // if aux1 is right half, switch to quad, else, switch to tri
-		morphing_geometry = MultirotorGeometry::HEX_COX;
+		morphing_geometry = MultirotorGeometry::TRI_Y;
 	} else {
-		morphing_geometry = MultirotorGeometry::OCTA_COX;
+		morphing_geometry = MultirotorGeometry::QUAD_X;
 	}
 	// MultirotorGeometryUnderlyingType is typedef for unsigned int
 	_rotor_count = _config_rotor_count[(MultirotorGeometryUnderlyingType)morphing_geometry];
