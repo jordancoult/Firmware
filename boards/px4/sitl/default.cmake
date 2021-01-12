@@ -27,6 +27,7 @@ px4_add_board(
 		airship_att_control
 		airspeed_selector
 		attitude_estimator_q
+		battery_internal_r
 		camera_feedback
 		commander
 		dataman
